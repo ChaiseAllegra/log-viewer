@@ -32,11 +32,11 @@ WORKDIR /app
 
 COPY backend/ /app/backend/
 COPY scripts/seed_db.py /app/scripts/seed_db.py
-COPY scripts/entrypoint.sh /app/scripts/entrypoint.sh
+COPY scripts/start_application.sh /app/scripts/start_application.sh
 COPY manufacturing_events.jsonl /app/data/manufacturing_events.jsonl
 COPY --from=frontend-build /build/dist/ /app/static/
 
-RUN chmod +x /app/scripts/entrypoint.sh && mkdir -p /data/db
+RUN chmod +x /app/scripts/start_application.sh && mkdir -p /data/db
 
 ENV STATIC_DIR=/app/static \
     EVENTS_FILE=/app/data/manufacturing_events.jsonl \
@@ -44,4 +44,4 @@ ENV STATIC_DIR=/app/static \
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+ENTRYPOINT ["/app/scripts/start_application.sh"]

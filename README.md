@@ -9,11 +9,12 @@ A self-contained log viewer for `manufacturing_events.jsonl`:
 ## Project layout
 
 ```
-├── backend/            FastAPI app (app/main.py) + requirements.txt
+├── backend/            FastAPI app
+│   └── app/            main.py wires routers: auth, events, flow
 ├── frontend/           index.html, styles.css, src/main.ts (built with tsc)
 ├── scripts/
 │   ├── seed_db.py      Seeds MongoDB from the JSONL (idempotent)
-│   └── entrypoint.sh   Container startup: mongod -> seed -> uvicorn
+│   └── start_application.sh  Container startup: mongod -> seed -> uvicorn
 ├── Dockerfile          Multi-stage build (node builds frontend, ubuntu runtime)
 ├── deploy-gcp.sh       Push to Artifact Registry + deploy to Cloud Run
 └── manufacturing_events.jsonl
