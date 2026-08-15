@@ -1,0 +1,11 @@
+{
+  "name": "log-viewer-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p dist/assets && cp index.html dist/ && cp styles.css dist/assets/ && tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,6 @@
+.git
+**/node_modules
+**/dist
+**/__pycache__
+*.md
+deploy-gcp.sh
