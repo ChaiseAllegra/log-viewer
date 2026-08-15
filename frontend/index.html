@@ -12,103 +12,45 @@
       <span class="brand-dot"></span>
       <h1>Manufacturing Log Viewer</h1>
     </div>
-    <div class="stats" id="stats"></div>
     <div class="user-box hidden" id="user-box">
       <span id="user-name"></span>
       <button id="logout" class="btn-ghost" type="button">Sign out</button>
     </div>
   </header>
 
-  <section class="filters">
-    <select id="event-type">
-      <option value="">All event types</option>
-    </select>
-    <input id="job" type="text" list="job-options" placeholder="All jobs" autocomplete="off" />
-    <datalist id="job-options"></datalist>
-    <select id="part">
-      <option value="">All parts</option>
-    </select>
-    <select id="machine">
-      <option value="">All machines</option>
-    </select>
-    <select id="customer">
-      <option value="">All customers</option>
-    </select>
-    <select id="material">
-      <option value="">All materials</option>
-    </select>
-    <div class="range-group" title="From (time optional, defaults to 00:00)">
-      <span class="range-label">From</span>
-      <input id="start-date" type="date" />
-      <input id="start-time" type="time" />
-    </div>
-    <div class="range-group" title="To (time optional, defaults to 23:59)">
-      <span class="range-label">To</span>
-      <input id="end-date" type="date" />
-      <input id="end-time" type="time" />
-    </div>
-    <button id="clear" class="btn-ghost" type="button">Clear</button>
-  </section>
-
-  <main>
-    <div class="table-wrap">
-      <table id="log-table">
-        <thead>
-          <tr>
-            <th id="ts-header" class="sortable">Timestamp</th>
-            <th>Event type</th>
-            <th>Event ID</th>
-            <th>Job</th>
-            <th>Part</th>
-            <th>Machine</th>
-            <th>Customer</th>
-            <th>Material</th>
-            <th class="num">Qty</th>
-          </tr>
-        </thead>
-        <tbody id="log-body"></tbody>
-      </table>
-      <div id="empty" class="empty hidden">No events match the current filters.</div>
-    </div>
-
-    <footer class="pager">
-      <span id="page-info"></span>
-      <div class="pager-controls">
-        <button id="prev" class="btn" type="button">&larr; Prev</button>
-        <button id="next" class="btn" type="button">Next &rarr;</button>
-        <select id="page-size">
-          <option value="25">25 / page</option>
-          <option value="50" selected>50 / page</option>
-          <option value="100">100 / page</option>
-          <option value="200">200 / page</option>
-        </select>
+  <main class="landing">
+    <a class="landing-card" href="/flow">
+      <div class="landing-icon">
+        <svg viewBox="0 0 48 24" width="72" height="36" aria-hidden="true">
+          <circle cx="6" cy="12" r="4" fill="currentColor" opacity="0.9"/>
+          <circle cx="24" cy="6" r="4" fill="currentColor" opacity="0.6"/>
+          <circle cx="24" cy="18" r="4" fill="currentColor" opacity="0.6"/>
+          <circle cx="42" cy="12" r="4" fill="currentColor" opacity="0.9"/>
+          <path d="M10 12 L20 7 M10 12 L20 17 M28 6 L38 11 M28 18 L38 13" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        </svg>
       </div>
-    </footer>
+      <h2>Part Factory Flow</h2>
+      <p>Pick a part and see its whole journey: every stage from job creation
+        through the production loop to completion, with volumes, deviations,
+        and per-job drill-down.</p>
+      <span class="landing-cta">Open flow diagram &rarr;</span>
+    </a>
+
+    <a class="landing-card" href="/logs">
+      <div class="landing-icon">
+        <svg viewBox="0 0 48 24" width="72" height="36" aria-hidden="true">
+          <rect x="4" y="3" width="40" height="3.5" rx="1.5" fill="currentColor" opacity="0.9"/>
+          <rect x="4" y="10" width="32" height="3.5" rx="1.5" fill="currentColor" opacity="0.6"/>
+          <rect x="4" y="17" width="37" height="3.5" rx="1.5" fill="currentColor" opacity="0.75"/>
+        </svg>
+      </div>
+      <h2>Log Viewer</h2>
+      <p>Browse, filter, and inspect all 19,519 raw manufacturing events:
+        by type, job, part, machine, customer, material, or time range.</p>
+      <span class="landing-cta">Open log viewer &rarr;</span>
+    </a>
   </main>
 
-  <aside id="drawer" class="drawer hidden">
-    <div class="drawer-head">
-      <h2 id="drawer-title"></h2>
-      <button id="drawer-close" class="btn-ghost" type="button">&times;</button>
-    </div>
-    <pre id="drawer-json"></pre>
-  </aside>
-  <div id="drawer-backdrop" class="drawer-backdrop hidden"></div>
-
-  <div id="login-screen" class="login-screen hidden">
-    <form id="login-form" class="login-card">
-      <div class="brand">
-        <span class="brand-dot"></span>
-        <h1>Manufacturing Log Viewer</h1>
-      </div>
-      <h2>Sign in</h2>
-      <input id="login-user" type="text" placeholder="Username" autocomplete="username" required />
-      <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" required />
-      <div id="login-error" class="login-error hidden"></div>
-      <button class="btn btn-primary" type="submit">Sign in</button>
-    </form>
-  </div>
-
-  <script type="module" src="/assets/main.js"></script>
+  <script type="module" src="/assets/landing.js"></script>
 </body>
 </html>

@@ -241,3 +241,122 @@ td.dim { color: var(--text-dim); }
   font-size: 0.82rem;
   text-align: center;
 }
+
+/* ---------- Navigation ---------- */
+
+.nav { display: flex; gap: 0.9rem; margin-left: 1.2rem; }
+.nav a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.15rem 0;
+  border-bottom: 2px solid transparent;
+}
+.nav a:hover { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ---------- Landing page ---------- */
+
+.landing {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  padding: 3rem 1.5rem;
+}
+.landing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(360px, 90vw);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.15s, border-color 0.15s;
+}
+.landing-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.landing-icon { color: var(--accent); }
+.landing-card h2 { margin: 0; font-size: 1.15rem; }
+.landing-card p { margin: 0; color: var(--text-dim); font-size: 0.88rem; line-height: 1.5; }
+.landing-cta { color: var(--accent); font-size: 0.88rem; margin-top: 0.4rem; }
+
+/* ---------- Flow page ---------- */
+
+.flow-main { flex: 1; display: flex; flex-direction: column; padding: 1rem 1.5rem; gap: 1rem; }
+.flow-hint { color: var(--text-dim); align-self: center; font-size: 0.85rem; }
+
+.funnel {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 1.1rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+.funnel-step strong { color: var(--text); margin-left: 0.25rem; }
+.funnel-arrow { color: var(--accent); }
+.funnel-pct { margin-left: auto; font-weight: 600; }
+.funnel-pct.good { color: var(--ok); }
+.funnel-pct.mid { color: var(--warn); }
+.funnel-pct.low { color: var(--danger); }
+
+.diagram-wrap { flex: 1; overflow: auto; }
+#diagram { min-width: 900px; }
+
+.node { cursor: pointer; }
+.node:hover circle { fill-opacity: 0.35; }
+.node-label { fill: var(--text); font-size: 13px; font-weight: 600; }
+.node-sub { fill: var(--text-dim); font-size: 11px; }
+.cluster-label {
+  fill: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.dimmed { opacity: 0.12; }
+
+/* ---------- Flow drawer content ---------- */
+
+.drawer-body { padding: 1.2rem; overflow: auto; font-size: 0.85rem; }
+.drawer-body h3 {
+  margin: 1.2rem 0 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+.stage-summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 1rem;
+  margin: 0;
+}
+.stage-summary dt { color: var(--text-dim); }
+.stage-summary dd { margin: 0; }
+
+.breakdown { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.breakdown li { display: flex; align-items: center; gap: 0.6rem; }
+.bd-label { width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bd-bar span { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.bd-count { width: 40px; text-align: right; color: var(--text-dim); }
+
+.dim-note { color: var(--text-dim); margin: 0 0 0.5rem; }
+.event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.event-list li { display: flex; gap: 0.6rem; align-items: baseline; }
+.event-list code { color: var(--text); font-size: 0.78rem; }
+.event-list .dim { color: var(--text-dim); font-size: 0.78rem; }

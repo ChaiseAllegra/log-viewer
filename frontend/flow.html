@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part Factory Flow — Manufacturing</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <h1>Part Factory Flow</h1>
+      <nav class="nav">
+        <a href="/">Home</a>
+        <a href="/logs">Log Viewer</a>
+      </nav>
+    </div>
+    <div class="user-box hidden" id="user-box">
+      <span id="user-name"></span>
+      <button id="logout" class="btn-ghost" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <section class="filters">
+    <select id="part-select">
+      <option value="">Select a part…</option>
+    </select>
+    <select id="job-select" disabled>
+      <option value="">All jobs (aggregate)</option>
+    </select>
+    <span id="flow-hint" class="flow-hint">Choose a part to see its factory flow.</span>
+  </section>
+
+  <main class="flow-main">
+    <div id="funnel" class="funnel hidden"></div>
+    <div id="diagram-wrap" class="diagram-wrap">
+      <svg id="diagram" width="100%" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </main>
+
+  <aside id="drawer" class="drawer hidden">
+    <div class="drawer-head">
+      <h2 id="drawer-title"></h2>
+      <button id="drawer-close" class="btn-ghost" type="button">&times;</button>
+    </div>
+    <div id="drawer-body" class="drawer-body"></div>
+  </aside>
+  <div id="drawer-backdrop" class="drawer-backdrop hidden"></div>
+
+  <script type="module" src="/assets/flow.js"></script>
+</body>
+</html>

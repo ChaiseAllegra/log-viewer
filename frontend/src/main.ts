@@ -1,3 +1,5 @@
+import { ensureAuth, wireUserBox, sessionExpired } from "./auth.js";
+
 interface LogEvent {
   event_id: string;
   timestamp: string;
@@ -147,7 +149,7 @@ function render(data: EventsResponse): void {
 async function load(): Promise<void> {
   const res = await fetch(`/api/events?${buildQuery()}`);
   if (res.status === 401) {
-    showLogin();
+    sessionExpired();
     return;
   }
   if (!res.ok) {
@@ -290,62 +292,8 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeDrawer();
 });
 
-// ---------- Authentication ----------
-
-const loginScreen = $("login-screen");
-const loginForm = $<HTMLFormElement>("login-form");
-const loginError = $("login-error");
-const userBox = $("user-box");
-
-function showLogin(): void {
-  loginScreen.classList.remove("hidden");
-  userBox.classList.add("hidden");
-}
-
-function startApp(userName: string): void {
-  loginScreen.classList.add("hidden");
-  userBox.classList.remove("hidden");
-  $("user-name").textContent = userName;
+void ensureAuth().then((user) => {
+  wireUserBox(user);
   void loadMeta();
   void load();
-}
-
-loginForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  loginError.classList.add("hidden");
-  const res = await fetch("/api/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_name: $<HTMLInputElement>("login-user").value.trim(),
-      password: $<HTMLInputElement>("login-pass").value,
-    }),
-  });
-  if (!res.ok) {
-    loginError.textContent = res.status === 401
-      ? "Invalid username or password"
-      : `Sign-in failed (${res.status})`;
-    loginError.classList.remove("hidden");
-    return;
-  }
-  const user = (await res.json()) as { user_name: string };
-  $<HTMLInputElement>("login-pass").value = "";
-  startApp(user.user_name);
 });
-
-$("logout").addEventListener("click", async () => {
-  await fetch("/api/logout", { method: "POST" });
-  showLogin();
-});
-
-// On page load: resume the session if the cookie is still valid,
-// otherwise prompt for sign-in.
-void (async () => {
-  const res = await fetch("/api/me");
-  if (res.ok) {
-    const user = (await res.json()) as { user_name: string };
-    startApp(user.user_name);
-  } else {
-    showLogin();
-  }
-})();

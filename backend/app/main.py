@@ -146,6 +146,105 @@ def stats(user: dict = Depends(current_user)):
     }
 
 
+# Per-stage metadata field worth summarizing in the flow diagram drawer.
+BREAKDOWN_FIELDS = {
+    "inspection_failed": "defect_code",
+    "job_blocked": "reason",
+    "job_unblocked": "reason",
+    "sensor_glitch": "signal",
+    "job_created": "priority",
+}
+
+
+@app.get("/api/flow")
+def flow(part_id: str, user: dict = Depends(current_user)):
+    """Aggregate a part's per-job event sequences into a stage graph:
+    nodes (event types), edges (observed transitions), a job funnel, and
+    each job's collapsed path for drill-down highlighting."""
+    docs = list(
+        events.find({"part_id": part_id, "job_id": {"$ne": None}})
+        .sort([("timestamp", ASCENDING), ("event_id", ASCENDING)])
+    )
+    if not docs:
+        raise HTTPException(status_code=404, detail=f"no events for part '{part_id}'")
+
+    per_job: dict = {}
+    for doc in docs:
+        per_job.setdefault(doc["job_id"], []).append(doc)
+
+    node_events: dict = {}
+    node_jobs: dict = {}
+    node_first: dict = {}
+    node_last: dict = {}
+    breakdowns: dict = {}
+    edge_counts: dict = {}
+    job_paths: dict = {}
+
+    for job_id, evs in per_job.items():
+        # Collapse consecutive repeats (e.g. 40 cycle_completed in a row)
+        # into single stage visits so edges represent stage changes.
+        path = []
+        for e in evs:
+            et = e["event_type"]
+            if not path or path[-1] != et:
+                path.append(et)
+        job_paths[job_id] = path
+        for a, b in zip(path, path[1:]):
+            edge_counts[(a, b)] = edge_counts.get((a, b), 0) + 1
+
+        for e in evs:
+            et = e["event_type"]
+            node_events[et] = node_events.get(et, 0) + 1
+            node_jobs.setdefault(et, set()).add(job_id)
+            ts = e["timestamp"]
+            if et not in node_first or ts < node_first[et]:
+                node_first[et] = ts
+            if et not in node_last or ts > node_last[et]:
+                node_last[et] = ts
+            field = BREAKDOWN_FIELDS.get(et)
+            value = (e.get("metadata") or {}).get(field) if field else None
+            if value is not None:
+                breakdowns.setdefault(et, {})
+                breakdowns[et][value] = breakdowns[et].get(value, 0) + 1
+
+    def fmt(ts: datetime) -> str:
+        return ts.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    nodes = [
+        {
+            "event_type": et,
+            "events": count,
+            "jobs": len(node_jobs[et]),
+            "first": fmt(node_first[et]),
+            "last": fmt(node_last[et]),
+            "breakdown_field": BREAKDOWN_FIELDS.get(et),
+            "breakdown": sorted(
+                ({"value": v, "count": c} for v, c in breakdowns.get(et, {}).items()),
+                key=lambda x: -x["count"],
+            )[:6],
+        }
+        for et, count in node_events.items()
+    ]
+
+    jobs = sorted(per_job)
+    return {
+        "part_id": part_id,
+        "jobs": jobs,
+        "funnel": {
+            "total_jobs": len(jobs),
+            "created": sum(1 for p in job_paths.values() if "job_created" in p),
+            "started": sum(1 for p in job_paths.values() if "job_started" in p),
+            "completed": sum(1 for p in job_paths.values() if "job_completed" in p),
+        },
+        "nodes": nodes,
+        "edges": [
+            {"from": a, "to": b, "count": n}
+            for (a, b), n in sorted(edge_counts.items(), key=lambda x: -x[1])
+        ],
+        "job_paths": job_paths,
+    }
+
+
 @app.get("/api/events")
 def list_events(
     page: int = Query(1, ge=1),
@@ -223,6 +322,17 @@ class NoCacheStaticFiles(StaticFiles):
 if STATIC_DIR.is_dir():
     app.mount("/assets", NoCacheStaticFiles(directory=STATIC_DIR / "assets"), name="assets")
 
+    def _page(name: str) -> FileResponse:
+        return FileResponse(STATIC_DIR / name, headers={"Cache-Control": "no-cache"})
+
     @app.get("/")
     def index():
-        return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
+        return _page("index.html")
+
+    @app.get("/logs")
+    def logs_page():
+        return _page("logs.html")
+
+    @app.get("/flow")
+    def flow_page():
+        return _page("flow.html")
