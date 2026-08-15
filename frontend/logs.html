@@ -9,8 +9,10 @@
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="brand-dot"></span>
-      <h1>Log Viewer</h1>
+      <a class="brand-home" href="/">
+        <span class="brand-dot"></span>
+        <h1>Log Viewer</h1>
+      </a>
       <nav class="nav">
         <a href="/">Home</a>
         <a href="/flow">Part Flow</a>
@@ -41,6 +43,9 @@
     <select id="material">
       <option value="">All materials</option>
     </select>
+    <select id="facility">
+      <option value="">All facilities</option>
+    </select>
     <div class="range-group" title="From (time optional, defaults to 00:00)">
       <span class="range-label">From</span>
       <input id="start-date" type="date" />
@@ -67,7 +72,10 @@
             <th>Machine</th>
             <th>Customer</th>
             <th>Material</th>
+            <th>Facility</th>
             <th class="num">Qty</th>
+            <th>Metadata</th>
+            <th>Raw log</th>
           </tr>
         </thead>
         <tbody id="log-body"></tbody>

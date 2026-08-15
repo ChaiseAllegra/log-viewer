@@ -99,6 +99,7 @@ def seed_events(events) -> None:
     events.create_index([("event_type", ASCENDING)])
     events.create_index([("job_id", ASCENDING)])
     events.create_index([("machine_id", ASCENDING)])
+    events.create_index([("metadata.facility", ASCENDING)])
     # Not unique: the source log contains a handful of duplicated event_ids.
     events.create_index([("event_id", ASCENDING)])
 

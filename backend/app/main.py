@@ -130,6 +130,7 @@ def meta(user: dict = Depends(current_user)):
         "parts": distinct("part_id"),
         "customers": distinct("customer_id"),
         "materials": distinct("material"),
+        "facilities": distinct("metadata.facility"),
         "total": events.estimated_document_count(),
     }
 
@@ -174,28 +175,68 @@ def flow(part_id: str, user: dict = Depends(current_user)):
 
     node_events: dict = {}
     node_jobs: dict = {}
+    node_job_counts: dict = {}
     node_first: dict = {}
     node_last: dict = {}
     breakdowns: dict = {}
     edge_counts: dict = {}
-    job_paths: dict = {}
+    job_stories: dict = {}
+
+    def fmt(ts: datetime) -> str:
+        return ts.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     for job_id, evs in per_job.items():
         # Collapse consecutive repeats (e.g. 40 cycle_completed in a row)
         # into single stage visits so edges represent stage changes.
-        path = []
+        raw_steps: list = []
         for e in evs:
             et = e["event_type"]
-            if not path or path[-1] != et:
-                path.append(et)
-        job_paths[job_id] = path
+            ts = e["timestamp"]
+            if raw_steps and raw_steps[-1]["event_type"] == et:
+                raw_steps[-1]["count"] += 1
+                raw_steps[-1]["last"] = ts
+                raw_steps[-1]["last_metadata"] = e.get("metadata") or {}
+            else:
+                raw_steps.append({
+                    "event_type": et,
+                    "count": 1,
+                    "first": ts,
+                    "last": ts,
+                    "first_metadata": e.get("metadata") or {},
+                    "last_metadata": e.get("metadata") or {},
+                })
+        path = [s["event_type"] for s in raw_steps]
         for a, b in zip(path, path[1:]):
             edge_counts[(a, b)] = edge_counts.get((a, b), 0) + 1
+
+        completed = next((e for e in reversed(evs) if e["event_type"] == "job_completed"), None)
+        completed_meta = (completed.get("metadata") or {}) if completed else {}
+        last_stage = path[-1] if path else None
+        job_stories[job_id] = {
+            "job_id": job_id,
+            "outcome": "completed" if completed else "stalled",
+            "last_stage": last_stage,
+            "good_quantity": completed_meta.get("good_quantity"),
+            "scrap_quantity": completed_meta.get("scrap_quantity"),
+            "steps": [
+                {
+                    "step": i,
+                    "event_type": s["event_type"],
+                    "count": s["count"],
+                    "first": fmt(s["first"]),
+                    "last": fmt(s["last"]),
+                    "metadata": s["last_metadata"] if s["event_type"] == "job_completed" else s["first_metadata"],
+                }
+                for i, s in enumerate(raw_steps, 1)
+            ],
+        }
 
         for e in evs:
             et = e["event_type"]
             node_events[et] = node_events.get(et, 0) + 1
             node_jobs.setdefault(et, set()).add(job_id)
+            per_job_counts = node_job_counts.setdefault(et, {})
+            per_job_counts[job_id] = per_job_counts.get(job_id, 0) + 1
             ts = e["timestamp"]
             if et not in node_first or ts < node_first[et]:
                 node_first[et] = ts
@@ -207,14 +248,15 @@ def flow(part_id: str, user: dict = Depends(current_user)):
                 breakdowns.setdefault(et, {})
                 breakdowns[et][value] = breakdowns[et].get(value, 0) + 1
 
-    def fmt(ts: datetime) -> str:
-        return ts.strftime("%Y-%m-%dT%H:%M:%SZ")
-
     nodes = [
         {
             "event_type": et,
             "events": count,
             "jobs": len(node_jobs[et]),
+            "job_counts": [
+                {"job_id": jid, "count": c}
+                for jid, c in sorted(node_job_counts[et].items(), key=lambda x: (-x[1], x[0]))
+            ],
             "first": fmt(node_first[et]),
             "last": fmt(node_last[et]),
             "breakdown_field": BREAKDOWN_FIELDS.get(et),
@@ -232,16 +274,16 @@ def flow(part_id: str, user: dict = Depends(current_user)):
         "jobs": jobs,
         "funnel": {
             "total_jobs": len(jobs),
-            "created": sum(1 for p in job_paths.values() if "job_created" in p),
-            "started": sum(1 for p in job_paths.values() if "job_started" in p),
-            "completed": sum(1 for p in job_paths.values() if "job_completed" in p),
+            "created": sum(1 for s in job_stories.values() if any(st["event_type"] == "job_created" for st in s["steps"])),
+            "started": sum(1 for s in job_stories.values() if any(st["event_type"] == "job_started" for st in s["steps"])),
+            "completed": sum(1 for s in job_stories.values() if s["outcome"] == "completed"),
         },
         "nodes": nodes,
         "edges": [
             {"from": a, "to": b, "count": n}
             for (a, b), n in sorted(edge_counts.items(), key=lambda x: -x[1])
         ],
-        "job_paths": job_paths,
+        "job_stories": job_stories,
     }
 
 
@@ -255,6 +297,7 @@ def list_events(
     part_id: Optional[str] = None,
     customer_id: Optional[str] = None,
     material: Optional[str] = None,
+    facility: Optional[str] = None,
     start: Optional[str] = None,
     end: Optional[str] = None,
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
@@ -272,6 +315,8 @@ def list_events(
     for field, value in exact_filters.items():
         if value:
             query[field] = value
+    if facility:
+        query["metadata.facility"] = facility
 
     ts_range: dict = {}
     if start:

@@ -28,6 +28,7 @@ interface Meta {
   parts: string[];
   customers: string[];
   materials: string[];
+  facilities: string[];
   total: number;
 }
 
@@ -54,6 +55,7 @@ const FILTERS: Record<string, string> = {
   machine: "machine_id",
   customer: "customer_id",
   material: "material",
+  facility: "facility",
 };
 const filterSelects = Object.fromEntries(
   Object.keys(FILTERS).map((id) => [id, $<HTMLSelectElement>(id)])
@@ -102,6 +104,11 @@ function buildQuery(): string {
   return params.toString();
 }
 
+function metaField(event: LogEvent, key: string): string | null {
+  const value = event.metadata?.[key];
+  return value == null || value === "" ? null : String(value);
+}
+
 function cell(text: string | number | null, cls = ""): string {
   const value = text === null || text === "" ? "—" : String(text);
   const dim = value === "—" ? " dim" : "";
@@ -130,7 +137,10 @@ function render(data: EventsResponse): void {
         ${cell(e.machine_id)}
         ${cell(e.customer_id)}
         ${cell(e.material)}
+        ${cell(metaField(e, "facility"))}
         ${cell(e.quantity, "num")}
+        <td><button type="button" class="btn btn-row" data-action="meta" data-idx="${i}">Metadata</button></td>
+        <td><button type="button" class="btn btn-row" data-action="raw" data-idx="${i}">Raw log</button></td>
       </tr>`;
     })
     .join("");
@@ -181,6 +191,7 @@ async function loadMeta(): Promise<void> {
   fillSelect(filterSelects["machine"], meta.machines);
   fillSelect(filterSelects["customer"], meta.customers);
   fillSelect(filterSelects["material"], meta.materials);
+  fillSelect(filterSelects["facility"], meta.facilities);
 
   const datalist = $<HTMLDataListElement>("job-options");
   for (const job of meta.jobs) {
@@ -197,9 +208,53 @@ async function loadMeta(): Promise<void> {
   ].join("");
 }
 
-function openDrawer(event: LogEvent): void {
-  $("drawer-title").textContent = `${event.event_id} — ${event.event_type}`;
-  $("drawer-json").textContent = JSON.stringify(event, null, 2);
+function splitIso(iso: string): { date: string; time: string } | null {
+  const match = iso.replace("Z", "").match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  return match ? { date: match[1], time: match[2] } : null;
+}
+
+function applyUrlFilters(): void {
+  const q = new URLSearchParams(location.search);
+  const eventType = q.get("event_type");
+  if (eventType) filterSelects["event-type"].value = eventType;
+  const part = q.get("part_id");
+  if (part) filterSelects["part"].value = part;
+  const machine = q.get("machine_id");
+  if (machine) filterSelects["machine"].value = machine;
+  const customer = q.get("customer_id");
+  if (customer) filterSelects["customer"].value = customer;
+  const material = q.get("material");
+  if (material) filterSelects["material"].value = material;
+  const facility = q.get("facility");
+  if (facility) filterSelects["facility"].value = facility;
+  const job = q.get("job_id");
+  if (job) {
+    jobInput.value = job;
+    jobInput.classList.toggle("invalid", !knownJobs.has(job));
+  }
+  const start = q.get("start");
+  if (start) {
+    const parsed = splitIso(start);
+    if (parsed) {
+      startDate.value = parsed.date;
+      startTime.value = parsed.time;
+    }
+  }
+  const end = q.get("end");
+  if (end) {
+    const parsed = splitIso(end);
+    if (parsed) {
+      endDate.value = parsed.date;
+      endTime.value = parsed.time;
+    }
+  }
+  if (start || end) state.sortDir = "asc";
+}
+
+function openDrawer(title: string, payload: unknown): void {
+  $("drawer-title").textContent = title;
+  $("drawer-json").textContent =
+    payload == null ? "No metadata on this event." : JSON.stringify(payload, null, 2);
   $("drawer").classList.remove("hidden");
   $("drawer-backdrop").classList.remove("hidden");
 }
@@ -279,11 +334,20 @@ tsHeader.addEventListener("click", () => {
 });
 
 tbody.addEventListener("click", (e) => {
-  const row = (e.target as HTMLElement).closest("tr");
-  if (!row) return;
-  const idx = Number(row.getAttribute("data-idx"));
-  const event = state.events[idx];
-  if (event) openDrawer(event);
+  const btn = (e.target as HTMLElement).closest("button[data-action]") as HTMLButtonElement | null;
+  if (!btn) return;
+  const event = state.events[Number(btn.dataset.idx)];
+  if (!event) return;
+  if (btn.dataset.action === "meta") {
+    const meta = event.metadata;
+    const empty = meta == null || Object.keys(meta).length === 0;
+    openDrawer(
+      `Metadata — ${event.event_id}`,
+      empty ? null : meta
+    );
+  } else if (btn.dataset.action === "raw") {
+    openDrawer(`${event.event_id} — ${event.event_type}`, event);
+  }
 });
 
 $("drawer-close").addEventListener("click", closeDrawer);
@@ -292,8 +356,9 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeDrawer();
 });
 
-void ensureAuth().then((user) => {
+void ensureAuth().then(async (user) => {
   wireUserBox(user);
-  void loadMeta();
+  await loadMeta();
+  applyUrlFilters();
   void load();
 });
